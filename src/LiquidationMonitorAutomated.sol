@@ -28,21 +28,9 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
     // ─── Events ────────────────────────────────────────────────
     event WalletAdded(address indexed wallet);
     event WalletRemoved(address indexed wallet);
-    event HealthChecked(
-        address indexed wallet,
-        uint256 healthFactor,
-        uint8 status
-    );
-    event WarningAlert(
-        address indexed wallet,
-        uint256 healthFactor,
-        uint256 blockNumber
-    );
-    event CriticalAlert(
-        address indexed wallet,
-        uint256 healthFactor,
-        uint256 blockNumber
-    );
+    event HealthChecked(address indexed wallet, uint256 healthFactor, uint8 status);
+    event WarningAlert(address indexed wallet, uint256 healthFactor, uint256 blockNumber);
+    event CriticalAlert(address indexed wallet, uint256 healthFactor, uint256 blockNumber);
     event PositionSafe(address indexed wallet, uint256 healthFactor);
     event AutomationPerformed(uint256 timestamp, uint256 walletsChecked);
 
@@ -74,9 +62,7 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
 
         for (uint256 i = 0; i < monitoredWallets.length; i++) {
             if (monitoredWallets[i] == wallet) {
-                monitoredWallets[i] = monitoredWallets[
-                    monitoredWallets.length - 1
-                ];
+                monitoredWallets[i] = monitoredWallets[monitoredWallets.length - 1];
                 monitoredWallets.pop();
                 break;
             }
@@ -86,11 +72,8 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
 
     // ─── Health Checking ───────────────────────────────────────
 
-    function checkHealth(address wallet)
-        public
-        returns (uint256 healthFactor, uint8 status)
-    {
-        (, , , , , healthFactor) = aavePool.getUserAccountData(wallet);
+    function checkHealth(address wallet) public returns (uint256 healthFactor, uint8 status) {
+        (,,,,, healthFactor) = aavePool.getUserAccountData(wallet);
 
         uint256 previousHealth = lastHealthFactor[wallet];
         lastHealthFactor[wallet] = healthFactor;
@@ -102,11 +85,7 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
         } else if (healthFactor < dangerThreshold) {
             status = 2; // Danger
             emit WarningAlert(wallet, healthFactor, block.number);
-        } else if (
-            previousHealth != 0 &&
-            previousHealth < dangerThreshold &&
-            healthFactor >= dangerThreshold
-        ) {
+        } else if (previousHealth != 0 && previousHealth < dangerThreshold && healthFactor >= dangerThreshold) {
             status = 0; // Recovered
             emit PositionSafe(wallet, healthFactor);
         } else {
@@ -130,15 +109,13 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
      * @return upkeepNeeded Whether upkeep should be performed
      * @return performData Data to pass to performUpkeep (empty in this case)
      */
-    function checkUpkeep(bytes calldata /* checkData */)
+    function checkUpkeep(bytes calldata /* checkData */ )
         external
         view
         override
         returns (bool upkeepNeeded, bytes memory performData)
     {
-        upkeepNeeded =
-            (block.timestamp - lastCheckTimestamp) >= checkInterval &&
-            monitoredWallets.length > 0;
+        upkeepNeeded = (block.timestamp - lastCheckTimestamp) >= checkInterval && monitoredWallets.length > 0;
         performData = "";
     }
 
@@ -146,12 +123,9 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
      * @notice Performs the upkeep (called by Chainlink Automation when checkUpkeep returns true)
      * @dev Checks all monitored wallets and updates their health status
      */
-    function performUpkeep(bytes calldata /* performData */) external override {
+    function performUpkeep(bytes calldata /* performData */ ) external override {
         // Revalidate the upkeep condition
-        require(
-            (block.timestamp - lastCheckTimestamp) >= checkInterval,
-            "Interval not met"
-        );
+        require((block.timestamp - lastCheckTimestamp) >= checkInterval, "Interval not met");
         require(monitoredWallets.length > 0, "No wallets to monitor");
 
         lastCheckTimestamp = block.timestamp;
@@ -187,12 +161,8 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
         return monitoredWallets.length;
     }
 
-    function getHealthFactor(address wallet)
-        external
-        view
-        returns (uint256 healthFactor, uint8 status)
-    {
-        (, , , , , healthFactor) = aavePool.getUserAccountData(wallet);
+    function getHealthFactor(address wallet) external view returns (uint256 healthFactor, uint8 status) {
+        (,,,,, healthFactor) = aavePool.getUserAccountData(wallet);
 
         uint256 previousHealth = lastHealthFactor[wallet];
 
@@ -201,11 +171,7 @@ contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
             status = 3; // Critical
         } else if (healthFactor < dangerThreshold) {
             status = 2; // Danger
-        } else if (
-            previousHealth != 0 &&
-            previousHealth < dangerThreshold &&
-            healthFactor >= dangerThreshold
-        ) {
+        } else if (previousHealth != 0 && previousHealth < dangerThreshold && healthFactor >= dangerThreshold) {
             status = 0; // Recovered
         } else {
             status = 1; // Safe

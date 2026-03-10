@@ -12,14 +12,9 @@ contract DeployAutomated is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        LiquidationMonitorAutomated monitor = new LiquidationMonitorAutomated(
-            AAVE_POOL
-        );
+        LiquidationMonitorAutomated monitor = new LiquidationMonitorAutomated(AAVE_POOL);
 
-        console.log(
-            "LiquidationMonitorAutomated deployed at:",
-            address(monitor)
-        );
+        console.log("LiquidationMonitorAutomated deployed at:", address(monitor));
         console.log("Aave Pool:", AAVE_POOL);
         console.log("Owner:", monitor.owner());
         console.log("Check Interval:", monitor.checkInterval(), "seconds");

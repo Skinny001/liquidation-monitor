@@ -20,21 +20,9 @@ contract LiquidationMonitor {
     // ─── Events ────────────────────────────────────────────────
     event WalletAdded(address indexed wallet);
     event WalletRemoved(address indexed wallet);
-    event HealthChecked(
-        address indexed wallet,
-        uint256 healthFactor,
-        uint8 status
-    );
-    event WarningAlert(
-        address indexed wallet,
-        uint256 healthFactor,
-        uint256 blockNumber
-    );
-    event CriticalAlert(
-        address indexed wallet,
-        uint256 healthFactor,
-        uint256 blockNumber
-    );
+    event HealthChecked(address indexed wallet, uint256 healthFactor, uint8 status);
+    event WarningAlert(address indexed wallet, uint256 healthFactor, uint256 blockNumber);
+    event CriticalAlert(address indexed wallet, uint256 healthFactor, uint256 blockNumber);
     event PositionSafe(address indexed wallet, uint256 healthFactor);
 
     // ─── Modifiers ─────────────────────────────────────────────
@@ -64,9 +52,7 @@ contract LiquidationMonitor {
 
         for (uint256 i = 0; i < monitoredWallets.length; i++) {
             if (monitoredWallets[i] == wallet) {
-                monitoredWallets[i] = monitoredWallets[
-                    monitoredWallets.length - 1
-                ];
+                monitoredWallets[i] = monitoredWallets[monitoredWallets.length - 1];
                 monitoredWallets.pop();
                 break;
             }
@@ -74,11 +60,8 @@ contract LiquidationMonitor {
         emit WalletRemoved(wallet);
     }
 
-    function checkHealth(address wallet)
-        public
-        returns (uint256 healthFactor, uint8 status)
-    {
-        (, , , , , healthFactor) = aavePool.getUserAccountData(wallet);
+    function checkHealth(address wallet) public returns (uint256 healthFactor, uint8 status) {
+        (,,,,, healthFactor) = aavePool.getUserAccountData(wallet);
 
         uint256 previousHealth = lastHealthFactor[wallet];
         lastHealthFactor[wallet] = healthFactor;
@@ -90,11 +73,7 @@ contract LiquidationMonitor {
         } else if (healthFactor < dangerThreshold) {
             status = 2; // Danger
             emit WarningAlert(wallet, healthFactor, block.number);
-        } else if (
-            previousHealth != 0 &&
-            previousHealth < dangerThreshold &&
-            healthFactor >= dangerThreshold
-        ) {
+        } else if (previousHealth != 0 && previousHealth < dangerThreshold && healthFactor >= dangerThreshold) {
             status = 0; // Recovered
             emit PositionSafe(wallet, healthFactor);
         } else {
@@ -110,12 +89,8 @@ contract LiquidationMonitor {
         }
     }
 
-    function getHealthFactor(address wallet)
-        public
-        view
-        returns (uint256 healthFactor, uint8 status)
-    {
-        (, , , , , healthFactor) = aavePool.getUserAccountData(wallet);
+    function getHealthFactor(address wallet) public view returns (uint256 healthFactor, uint8 status) {
+        (,,,,, healthFactor) = aavePool.getUserAccountData(wallet);
 
         uint256 previousHealth = lastHealthFactor[wallet];
 
@@ -124,11 +99,7 @@ contract LiquidationMonitor {
             status = 3; // Critical
         } else if (healthFactor < dangerThreshold) {
             status = 2; // Danger
-        } else if (
-            previousHealth != 0 &&
-            previousHealth < dangerThreshold &&
-            healthFactor >= dangerThreshold
-        ) {
+        } else if (previousHealth != 0 && previousHealth < dangerThreshold && healthFactor >= dangerThreshold) {
             status = 0; // Recovered
         } else {
             status = 1; // Safe

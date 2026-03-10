@@ -16,14 +16,7 @@ contract MockAavePool is IAavePool {
     function getUserAccountData(address)
         external
         view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256 healthFactor
-        )
+        returns (uint256, uint256, uint256, uint256, uint256, uint256 healthFactor)
     {
         return (0, 0, 0, 0, 0, mockHealthFactor);
     }
