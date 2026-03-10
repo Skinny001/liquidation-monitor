@@ -30,12 +30,10 @@ contract Simulate is Script {
             console.log("Added wallet:", walletsToMonitor[i]);
         }
 
-        // Step 2 — Run 100 rounds of health checks
-        console.log("=== Running simulation ===");
-        for (uint256 round = 0; round < 100; round++) {
-            monitor.checkAllWallets();
-            console.log("Round completed:", round + 1);
-        }
+        // Step 2 — Run health check once
+        console.log("=== Running health check ===");
+        monitor.checkAllWallets();
+        console.log("Health check completed");
 
         console.log("=== Simulation complete ===");
         console.log("Total wallets monitored:", monitor.getWalletCount());

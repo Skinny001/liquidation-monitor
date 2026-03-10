@@ -2,8 +2,12 @@
 pragma solidity ^0.8.19;
 
 import {IAavePool} from "./interfaces/IAavePool.sol";
+import {AutomationCompatibleInterface} from "./interfaces/AutomationCompatibleInterface.sol";
 
-contract LiquidationMonitor {
+/// @title LiquidationMonitorAutomated
+/// @notice Automated liquidation monitoring for Aave V3 positions with Chainlink Automation
+/// @dev Implements AutomationCompatibleInterface for Chainlink Automation integration
+contract LiquidationMonitorAutomated is AutomationCompatibleInterface {
     // ─── State Variables ───────────────────────────────────────
     address public owner;
     IAavePool public aavePool;
@@ -16,6 +20,10 @@ contract LiquidationMonitor {
     uint256 public dangerThreshold = 1.1e18;
     // 1.05 scaled by 1e18
     uint256 public criticalThreshold = 1.05e18;
+
+    // Automation settings
+    uint256 public checkInterval = 5 minutes;
+    uint256 public lastCheckTimestamp;
 
     // ─── Events ────────────────────────────────────────────────
     event WalletAdded(address indexed wallet);
@@ -36,6 +44,7 @@ contract LiquidationMonitor {
         uint256 blockNumber
     );
     event PositionSafe(address indexed wallet, uint256 healthFactor);
+    event AutomationPerformed(uint256 timestamp, uint256 walletsChecked);
 
     // ─── Modifiers ─────────────────────────────────────────────
     modifier onlyOwner() {
@@ -47,9 +56,10 @@ contract LiquidationMonitor {
     constructor(address _aavePool) {
         owner = msg.sender;
         aavePool = IAavePool(_aavePool);
+        lastCheckTimestamp = block.timestamp;
     }
 
-    // ─── Functions ─────────────────────────────────────────────
+    // ─── Wallet Management ─────────────────────────────────────
 
     function addWallet(address wallet) external onlyOwner {
         require(!isMonitored[wallet], "Already monitored");
@@ -73,6 +83,8 @@ contract LiquidationMonitor {
         }
         emit WalletRemoved(wallet);
     }
+
+    // ─── Health Checking ───────────────────────────────────────
 
     function checkHealth(address wallet)
         public
@@ -104,14 +116,79 @@ contract LiquidationMonitor {
         emit HealthChecked(wallet, healthFactor, status);
     }
 
-    function checkAllWallets() external {
+    function checkAllWallets() public {
         for (uint256 i = 0; i < monitoredWallets.length; i++) {
             checkHealth(monitoredWallets[i]);
         }
     }
 
+    // ─── Chainlink Automation Interface ────────────────────────
+
+    /**
+     * @notice Checks if upkeep is needed (called by Chainlink Automation)
+     * @dev Returns true if enough time has passed since last check
+     * @return upkeepNeeded Whether upkeep should be performed
+     * @return performData Data to pass to performUpkeep (empty in this case)
+     */
+    function checkUpkeep(bytes calldata /* checkData */)
+        external
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory performData)
+    {
+        upkeepNeeded =
+            (block.timestamp - lastCheckTimestamp) >= checkInterval &&
+            monitoredWallets.length > 0;
+        performData = "";
+    }
+
+    /**
+     * @notice Performs the upkeep (called by Chainlink Automation when checkUpkeep returns true)
+     * @dev Checks all monitored wallets and updates their health status
+     */
+    function performUpkeep(bytes calldata /* performData */) external override {
+        // Revalidate the upkeep condition
+        require(
+            (block.timestamp - lastCheckTimestamp) >= checkInterval,
+            "Interval not met"
+        );
+        require(monitoredWallets.length > 0, "No wallets to monitor");
+
+        lastCheckTimestamp = block.timestamp;
+        uint256 walletsChecked = monitoredWallets.length;
+
+        checkAllWallets();
+
+        emit AutomationPerformed(block.timestamp, walletsChecked);
+    }
+
+    // ─── Configuration ─────────────────────────────────────────
+
+    function setDangerThreshold(uint256 newThreshold) external onlyOwner {
+        dangerThreshold = newThreshold;
+    }
+
+    function setCriticalThreshold(uint256 newThreshold) external onlyOwner {
+        criticalThreshold = newThreshold;
+    }
+
+    function setCheckInterval(uint256 newInterval) external onlyOwner {
+        require(newInterval >= 1 minutes, "Interval too short");
+        checkInterval = newInterval;
+    }
+
+    // ─── View Functions ────────────────────────────────────────
+
+    function getMonitoredWallets() external view returns (address[] memory) {
+        return monitoredWallets;
+    }
+
+    function getWalletCount() external view returns (uint256) {
+        return monitoredWallets.length;
+    }
+
     function getHealthFactor(address wallet)
-        public
+        external
         view
         returns (uint256 healthFactor, uint8 status)
     {
@@ -119,7 +196,7 @@ contract LiquidationMonitor {
 
         uint256 previousHealth = lastHealthFactor[wallet];
 
-        // Determine status
+        // Determine status (read-only)
         if (healthFactor < criticalThreshold) {
             status = 3; // Critical
         } else if (healthFactor < dangerThreshold) {
@@ -135,19 +212,7 @@ contract LiquidationMonitor {
         }
     }
 
-    function setDangerThreshold(uint256 newThreshold) external onlyOwner {
-        dangerThreshold = newThreshold;
-    }
-
-    function setCriticalThreshold(uint256 newThreshold) external onlyOwner {
-        criticalThreshold = newThreshold;
-    }
-
-    function getMonitoredWallets() external view returns (address[] memory) {
-        return monitoredWallets;
-    }
-
-    function getWalletCount() external view returns (uint256) {
-        return monitoredWallets.length;
+    function getNextCheckTime() external view returns (uint256) {
+        return lastCheckTimestamp + checkInterval;
     }
 }
