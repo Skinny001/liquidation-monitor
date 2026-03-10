@@ -6,7 +6,7 @@ import {LiquidationMonitor} from "../src/LiquidationMonitor.sol";
 
 contract Simulate is Script {
     // Deployed contract address
-    address constant MONITOR_ADDRESS = 0x9a1d29Ef786fff0F9Ce334A10D6ae1691399755cc;
+    address constant MONITOR_ADDRESS = 0x9a129Ef786fff0F9Ce334A10D6ae1691399755cc;
 
     // Real mainnet wallets that had Aave positions during volatile periods
     address[] public walletsToMonitor = [
