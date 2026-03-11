@@ -257,7 +257,8 @@ Test result: ok. 11 passed; 0 failed
 
 | Contract | Address | Features |
 |----------|---------|----------|
-| LiquidationMonitor | `0x9a129Ef786fff0F9Ce334A10D6ae1691399755cc` | Manual monitoring |
+| **LiquidationMonitor (Latest)** | `0xA3C39144C3c1164c7e99e7a0579534631A2ce297` | **Manual monitoring - Use this!** |
+| LiquidationMonitor (v1) | `0x9a129Ef786fff0F9Ce334A10D6ae1691399755cc` | Previous deployment |
 | LiquidationMonitorAutomated | `0xcAa317607CC82889E346f931673d28007a554863` | Chainlink Automation (5 min intervals) |
 | Aave V3 Pool | `0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2` | Ethereum Mainnet Replay |
 
