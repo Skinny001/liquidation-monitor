@@ -8,11 +8,11 @@ Build a Next.js 14 dashboard app called "Liquidation Monitor" with 3 pages using
 
 ### Network Configuration
 ```javascript
-const CONTRACT_ADDRESS = "0xA3C39144C3c1164c7e99e7a0579534631A2ce297"  // Latest manual version
+const CONTRACT_ADDRESS = "0x2cdED3F23eb62f809D9577e89e73d5d317BD5bB6"  // Current active deployment
 const CONTRACT_ADDRESS_AUTOMATED = "0xcAa317607CC82889E346f931673d28007a554863"  // Automated version (optional)
-const RPC_URL = "https://rpc.contract.dev/d9953a1f706adc010667e9024b8729e9"
-const CHAIN_ID = 58092  // Stagenet
-const CHAIN_NAME = "Stagenet"
+const RPC_URL = "https://rpc.contract.dev/b5a1407e7d0eafbfcd04ad6f4d84d817"
+const CHAIN_ID = 99561  // Contract.dev Workspace
+const CHAIN_NAME = "Contract.dev"
 ```
 
 ### Contract ABI Functions
